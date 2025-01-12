@@ -15,29 +15,31 @@
           devShells.default = pkgs.mkShell {
             buildInputs = with pkgs; [
               nasm
+              xc
+              qrencode
             ];
           };
-          packages.saycheese = pkgs.stdenv.mkDerivation {
-            name = "headblockhead-saycheese";
+          packages.saycheese-ncg = pkgs.stdenv.mkDerivation {
+            name = "saycheese-ncg";
             src = ./.;
 
             nativeBuildInputs = [ pkgs.nasm ];
 
             buildPhase = ''
               runHook preBuild
-              nasm -f elf64 -o main.o src/main.s
-              ld -o main main.o
+              nasm -f bin -o main.o src/main.asm
+              chmod +x main.o
               runHook postBuild
             '';
 
             installPhase = ''
               runHook preInstall
               mkdir -p $out/bin
-              cp main $out/bin
-                runHook postInstall
+              cp main.o $out/bin/saycheese-ncg
+              runHook postInstall
             '';
           };
-          packages.default = packages.saycheese;
+          packages.default = packages.saycheese-ncg;
         }
       );
 }

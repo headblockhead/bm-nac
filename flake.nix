@@ -16,6 +16,8 @@
             buildInputs = with pkgs; [
               nasm
               xc
+              gdb
+              xxd
               qrencode
             ];
           };

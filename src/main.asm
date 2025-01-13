@@ -52,10 +52,59 @@ _start:
   mov rdx, welcome_message_size
   syscall
 
-  mov byte [board + 3], 'X'
-
+  .loop:
+  call get_move
   call print_board
-  call gameover
+  call check_gameover
+  jmp .loop
+
+get_move: 
+  mov byte [move_input], 0
+  mov rax, 0
+  mov rdi, 0
+  mov rsi, move_input ; set move_input to the index of our move
+  mov rdx, 1
+  syscall
+
+  cmp byte [move_input], '0'
+  jl get_move ; invalid input, ignore.
+  cmp byte [move_input], '9'
+  jg get_move ; invalid input, ignore.
+
+  mov rax, 0
+  mov rdi, 0
+  mov rsi, 0 ; ignore input
+  mov rdx, 1
+
+  cmp byte [current_player], 'X'
+  je set_x
+  cmp byte [current_player], 'O'
+  je set_o
+
+set_o:
+  mov al, byte [move_input]
+  sub al, '0'
+  mov rdi, rax
+  mov rsi, 'O'
+  call set_board_at_index
+  mov byte [current_player], 'X'
+  ret
+
+set_x:
+  mov al, byte [move_input]
+  sub al, '0'
+  mov rdi, rax
+  mov rsi, 'X'
+  call set_board_at_index
+  mov byte [current_player], 'O'
+  ret
+
+; expects rdi to be the index, and rsi to be the value
+set_board_at_index:
+  mov rax, 0
+  mov rax, rdi
+  mov byte [board + rax], sil
+  ret
 
 print_board:
   mov rax, 1
@@ -63,6 +112,11 @@ print_board:
   mov rsi, board
   mov rdx, 9
   syscall
+  call print_newline
+  ret
+
+check_gameover:
+  ; TODO
   ret
 
 gameover:
@@ -72,8 +126,16 @@ gameover:
   mov rdx, 11
   syscall
   mov rax, 60
-  xor rdi, rdi
+  mov rdi, 0
   syscall
+
+print_newline:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, newline
+  mov rdx, 1
+  syscall
+  ret
 
 text_section_size  equ  $ - text_section
 
@@ -83,6 +145,9 @@ welcome_message: db "Welcome to Noughts and Crosses.", 0xa
 welcome_message_size equ $ - welcome_message
 gameover_message: db "Game over.", 0xa
 board: times 9 db ' '
+current_player: db 'X'
+move_input: db 0
+newline: db 0xa
 
 data_section_size  equ  $ - data_section
 

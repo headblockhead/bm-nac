@@ -52,7 +52,7 @@ _start:
   mov rdx, welcome_message_size
   syscall
 
-  mov byte [board + 4], symbol_x
+  mov byte [board + 3], 'X'
 
   call print_board
   call gameover
@@ -83,7 +83,6 @@ welcome_message: db "Welcome to Noughts and Crosses.", 0xa
 welcome_message_size equ $ - welcome_message
 gameover_message: db "Game over.", 0xa
 board: times 9 db ' '
-symbol_x: db 'X'
 
 data_section_size  equ  $ - data_section
 

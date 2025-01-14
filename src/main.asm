@@ -58,7 +58,7 @@ _start:
   call check_gameover
   jmp .loop
 
-get_move: 
+get_move:
   mov byte [move_input], 0
   mov rax, 0
   mov rdi, 0
@@ -66,15 +66,22 @@ get_move:
   mov rdx, 1
   syscall
 
-  cmp byte [move_input], '0'
-  jl get_move ; invalid input, ignore.
-  cmp byte [move_input], '9'
-  jg get_move ; invalid input, ignore.
+  cmp byte [move_input], 0xa
+  je getmove_invalid
 
+  .loop:
   mov rax, 0
   mov rdi, 0
-  mov rsi, 0 ; ignore input
+  mov rsi, ignored_buffer
   mov rdx, 1
+  syscall
+  cmp byte [ignored_buffer], 0xa
+  jne .loop
+
+  cmp byte [move_input], '1'
+  jl getmove_invalid ; invalid input, ignore.
+  cmp byte [move_input], '9'
+  jg getmove_invalid ; invalid input, ignore.
 
   cmp byte [current_player], 'X'
   je set_x
@@ -83,7 +90,7 @@ get_move:
 
 set_o:
   mov al, byte [move_input]
-  sub al, '0'
+  sub al, '1'
   mov rdi, rax
   mov rsi, 'O'
   call set_board_at_index
@@ -92,11 +99,15 @@ set_o:
 
 set_x:
   mov al, byte [move_input]
-  sub al, '0'
+  sub al, '1'
   mov rdi, rax
   mov rsi, 'X'
   call set_board_at_index
   mov byte [current_player], 'O'
+  ret
+
+getmove_invalid:
+  mov byte [move_input], 0
   ret
 
 ; expects rdi to be the index, and rsi to be the value
@@ -147,6 +158,7 @@ gameover_message: db "Game over.", 0xa
 board: times 9 db ' '
 current_player: db 'X'
 move_input: db 0
+ignored_buffer: db 0
 newline: db 0xa
 
 data_section_size  equ  $ - data_section

@@ -118,12 +118,19 @@ set_board_at_index:
   ret
 
 print_board:
+  mov r12, 0 ; index
+
+  .loop:
   mov rax, 1
   mov rdi, 1
   mov rsi, board
-  mov rdx, 9
+  add rsi, r12
+  mov rdx, 3
   syscall
+  add r12, 3
   call print_newline
+  cmp r12, 9
+  jne .loop
   ret
 
 check_gameover:
@@ -137,7 +144,7 @@ gameover:
   mov rdx, 11
   syscall
   mov rax, 60
-  mov rdi, 0
+  mov rdi, 0 
   syscall
 
 print_newline:
@@ -155,7 +162,7 @@ data_section:
 welcome_message: db "Welcome to Noughts and Crosses.", 0xa
 welcome_message_size equ $ - welcome_message
 gameover_message: db "Game over.", 0xa
-board: times 9 db ' '
+board: times 9 db '_'
 current_player: db 'X'
 move_input: db 0
 ignored_buffer: db 0

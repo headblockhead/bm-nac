@@ -134,7 +134,81 @@ print_board:
   ret
 
 check_gameover:
-  ; TODO
+  mov bpl, byte [board + 0]
+  mov r8b, byte [board + 1]
+  mov r9b, byte [board + 2]
+  mov r10b, byte [board + 3]
+  mov r11b, byte [board + 4]
+  mov r12b, byte [board + 5]
+  mov r13b, byte [board + 6]
+  mov r14b, byte [board + 7]
+  mov r15b, byte [board + 8]
+
+gameover_row0_check:
+  cmp bpl, '_'
+  je gameover_row1_check
+  cmp bpl, r8b
+  jne gameover_row1_check
+  cmp r8b, r9b
+  je gameover
+
+gameover_row1_check:
+  cmp r10b, '_'
+  je gameover_row2_check
+  cmp r10b, r11b
+  jne gameover_row2_check
+  cmp r11b, r12b
+  je gameover
+
+gameover_row2_check:
+  cmp r13b, '_'
+  je gameover_col0_check
+  cmp r13b, r14b
+  jne gameover_col0_check
+  cmp r14b, r15b
+  je gameover
+
+gameover_col0_check:
+  cmp bpl, '_'
+  je gameover_col1_check
+  cmp bpl, r10b
+  jne gameover_col1_check
+  cmp r10b, r13b
+  je gameover
+
+gameover_col1_check:
+  cmp r8b, '_'
+  je gameover_col2_check
+  cmp r8b, r11b
+  jne gameover_col2_check
+  cmp r11b, r14b
+  je gameover
+
+gameover_col2_check:
+  cmp r9b, '_'
+  je gameover_diag0_check
+  cmp r9b, r12b
+  jne gameover_diag0_check
+  cmp r12b, r15b
+  je gameover
+
+gameover_diag0_check:
+  cmp bpl, '_'
+  je gameover_diag1_check
+  cmp bpl, r11b
+  jne gameover_diag1_check
+  cmp r11b, r15b
+  je gameover
+
+gameover_diag1_check:
+  cmp r9b, '_'
+  je gameover_return
+  cmp r9b, r11b
+  jne gameover_return
+  cmp r11b, r13b
+  je gameover
+
+gameover_return:
   ret
 
 gameover:

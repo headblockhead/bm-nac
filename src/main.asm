@@ -112,7 +112,6 @@ getmove_invalid:
 
 ; expects rdi to be the index, and rsi to be the value
 set_board_at_index:
-  mov rax, 0
   mov rax, rdi
   mov byte [board + rax], sil
   ret
@@ -149,6 +148,7 @@ gameover_row0_check:
   je gameover_row1_check
   cmp bpl, r8b
   jne gameover_row1_check
+  mov al, bpl
   cmp r8b, r9b
   je gameover
 
@@ -157,6 +157,7 @@ gameover_row1_check:
   je gameover_row2_check
   cmp r10b, r11b
   jne gameover_row2_check
+  mov al, r10b
   cmp r11b, r12b
   je gameover
 
@@ -165,6 +166,7 @@ gameover_row2_check:
   je gameover_col0_check
   cmp r13b, r14b
   jne gameover_col0_check
+  mov al, r13b
   cmp r14b, r15b
   je gameover
 
@@ -173,6 +175,7 @@ gameover_col0_check:
   je gameover_col1_check
   cmp bpl, r10b
   jne gameover_col1_check
+  mov al, bpl
   cmp r10b, r13b
   je gameover
 
@@ -181,6 +184,7 @@ gameover_col1_check:
   je gameover_col2_check
   cmp r8b, r11b
   jne gameover_col2_check
+  mov al, r8b
   cmp r11b, r14b
   je gameover
 
@@ -189,6 +193,7 @@ gameover_col2_check:
   je gameover_diag0_check
   cmp r9b, r12b
   jne gameover_diag0_check
+  mov al, r9b
   cmp r12b, r15b
   je gameover
 
@@ -197,6 +202,7 @@ gameover_diag0_check:
   je gameover_diag1_check
   cmp bpl, r11b
   jne gameover_diag1_check
+  mov al, bpl
   cmp r11b, r15b
   je gameover
 
@@ -205,6 +211,7 @@ gameover_diag1_check:
   je gameover_return
   cmp r9b, r11b
   jne gameover_return
+  mov al, r9b
   cmp r11b, r13b
   je gameover
 
@@ -212,10 +219,21 @@ gameover_return:
   ret
 
 gameover:
+  mov byte [current_player], al
   mov rax, 1
   mov rdi, 1
   mov rsi, gameover_message
-  mov rdx, 11
+  mov rdx, gameover_message_size
+  syscall
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, current_player
+  mov rdx, 1
+  syscall
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, gameover_win_message
+  mov rdx, gameover_win_message_size
   syscall
   mov rax, 60
   mov rdi, 0 
@@ -236,6 +254,9 @@ data_section:
 welcome_message: db "Welcome to Noughts and Crosses.", 0xa
 welcome_message_size equ $ - welcome_message
 gameover_message: db "Game over.", 0xa
+gameover_message_size equ $ - gameover_message
+gameover_win_message: db " wins!", 0xa
+gameover_win_message_size equ $ - gameover_win_message
 board: times 9 db '_'
 current_player: db 'X'
 move_input: db 0

@@ -59,6 +59,12 @@ _start:
   jmp .loop
 
 get_move:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, current_player
+  mov rdx, 1
+  syscall
+
   mov byte [move_input], 0
   mov rax, 0
   mov rdi, 0

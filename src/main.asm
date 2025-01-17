@@ -52,6 +52,8 @@ _start:
   mov rdx, welcome_message_size
   syscall
 
+  call print_board
+
   .loop:
   call get_move
   call print_board
@@ -62,7 +64,7 @@ get_move:
   mov rax, 1
   mov rdi, 1
   mov rsi, current_player
-  mov rdx, 1
+  mov rdx, move_input_message_size + 1
   syscall
 
   mov byte [move_input], 0
@@ -89,24 +91,25 @@ get_move:
   cmp byte [move_input], '9'
   jg getmove_invalid ; invalid input, ignore.
 
+  mov al, byte [move_input]
+  sub al, '1'
+  mov rdi, rax
+
+  cmp byte [board + rdi], '_'
+  jne getmove_invalid ; invalid input, ignore.
+
   cmp byte [current_player], 'X'
   je set_x
   cmp byte [current_player], 'O'
   je set_o
 
 set_o:
-  mov al, byte [move_input]
-  sub al, '1'
-  mov rdi, rax
   mov rsi, 'O'
   call set_board_at_index
   mov byte [current_player], 'X'
   ret
 
 set_x:
-  mov al, byte [move_input]
-  sub al, '1'
-  mov rdi, rax
   mov rsi, 'X'
   call set_board_at_index
   mov byte [current_player], 'O'
@@ -136,6 +139,25 @@ print_board:
   call print_newline
   cmp r12, 9
   jne .loop
+
+  call step_back_cursor
+
+  ret
+
+step_back_cursor:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, previous_4_lines
+  mov rdx, previous_4_lines_size
+  syscall
+  ret
+
+step_forward_cursor:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, next_4_lines
+  mov rdx, next_4_lines_size
+  syscall
   ret
 
 check_gameover:
@@ -148,6 +170,17 @@ check_gameover:
   mov r13b, byte [board + 6]
   mov r14b, byte [board + 7]
   mov r15b, byte [board + 8]
+
+  mov rax, 0
+
+  .loop:
+  cmp byte [board + rax], '_'
+  je gameover_row0_check
+  inc rax
+  cmp rax, 9
+  jne .loop
+  mov al, 0
+  jmp gameover
 
 gameover_row0_check:
   cmp bpl, '_'
@@ -225,12 +258,31 @@ gameover_return:
   ret
 
 gameover:
+  cmp al, 0
+  je gameover_draw
+
   mov byte [current_player], al
+  jmp gameover_print
+
+gameover_initial_message:
+  call step_forward_cursor
   mov rax, 1
   mov rdi, 1
   mov rsi, gameover_message
   mov rdx, gameover_message_size
   syscall
+  ret
+
+gameover_draw:
+  call gameover_initial_message
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, gameover_draw_message
+  mov rdx, gameover_draw_message_size
+  syscall
+  jmp gameover_exit
+
+gameover_print:
   mov rax, 1
   mov rdi, 1
   mov rsi, current_player
@@ -241,6 +293,8 @@ gameover:
   mov rsi, gameover_win_message
   mov rdx, gameover_win_message_size
   syscall
+
+gameover_exit:
   mov rax, 60
   mov rdi, 0 
   syscall
@@ -257,14 +311,22 @@ text_section_size  equ  $ - text_section
 
 data_section:
 
-welcome_message: db "Welcome to Noughts and Crosses.", 0xa
+welcome_message: db "Welcome to Noughts and Crosses.", 0xa, 0xa
 welcome_message_size equ $ - welcome_message
 gameover_message: db "Game over.", 0xa
 gameover_message_size equ $ - gameover_message
-gameover_win_message: db " wins!", 0xa
+gameover_win_message: db " wins!"
 gameover_win_message_size equ $ - gameover_win_message
+gameover_draw_message: db "It's a draw!"
+gameover_draw_message_size equ $ - gameover_draw_message
+previous_4_lines: db 0x1b, '[', '4', 'F'
+previous_4_lines_size equ $ - previous_4_lines
+next_4_lines: db 0x1b, '[', '4', 'E'
+next_4_lines_size equ $ - next_4_lines
 board: times 9 db '_'
 current_player: db 'X'
+move_input_message: db "'s move: "
+move_input_message_size equ $ - move_input_message
 move_input: db 0
 ignored_buffer: db 0
 newline: db 0xa

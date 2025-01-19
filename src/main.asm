@@ -457,6 +457,7 @@ gameover_print:
   syscall
 
 gameover_exit:
+  call print_newline
   mov rax, 60
   mov rdi, 0 
   syscall

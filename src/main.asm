@@ -61,6 +61,8 @@ _start:
   jmp .loop
 
 get_move:
+  call step_back_cursor
+
   mov rax, 1
   mov rdi, 1
   mov rsi, current_player
@@ -131,32 +133,82 @@ print_board:
   .loop:
   mov rax, 1
   mov rdi, 1
+  mov rsi, board_line
+  mov rdx, board_line_size
+  syscall
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, board_gap
+  mov rdx, board_gap_size
+  syscall
+
+  .loop2:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, board_tile_start
+  mov rdx, board_tile_start_size
+  syscall
+  mov rax, 1
+  mov rdi, 1
   mov rsi, board
   add rsi, r12
-  mov rdx, 3
+  mov rdx, 1
   syscall
-  add r12, 3
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, board_tile_end
+  mov rdx, board_tile_end_size
+  syscall
+
+  inc r12
+
+  cmp r12, 3
+  je .escape
+  cmp r12, 6
+  je .escape
+  cmp r12, 9
+  je .escape
+
+  jmp .loop2
+
+  .escape:
+
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, board_tile_start
+  mov rdx, 1
+
   call print_newline
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, board_gap
+  mov rdx, board_gap_size
+  syscall
+
   cmp r12, 9
   jne .loop
 
-  call step_back_cursor
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, board_line
+  mov rdx, board_line_size
+  syscall
 
   ret
 
 step_back_cursor:
   mov rax, 1
   mov rdi, 1
-  mov rsi, previous_4_lines
-  mov rdx, previous_4_lines_size
+  mov rsi, previous_lines
+  mov rdx, previous_lines_size
   syscall
   ret
 
 step_forward_cursor:
   mov rax, 1
   mov rdi, 1
-  mov rsi, next_4_lines
-  mov rdx, next_4_lines_size
+  mov rsi, next_lines
+  mov rdx, next_lines_size
   syscall
   ret
 
@@ -265,7 +317,6 @@ gameover:
   jmp gameover_print
 
 gameover_initial_message:
-  call step_forward_cursor
   mov rax, 1
   mov rdi, 1
   mov rsi, gameover_message
@@ -283,6 +334,7 @@ gameover_draw:
   jmp gameover_exit
 
 gameover_print:
+  call gameover_initial_message
   mov rax, 1
   mov rdi, 1
   mov rsi, current_player
@@ -319,11 +371,20 @@ gameover_win_message: db " wins!"
 gameover_win_message_size equ $ - gameover_win_message
 gameover_draw_message: db "It's a draw!"
 gameover_draw_message_size equ $ - gameover_draw_message
-previous_4_lines: db 0x1b, '[', '4', 'F'
-previous_4_lines_size equ $ - previous_4_lines
-next_4_lines: db 0x1b, '[', '4', 'E'
-next_4_lines_size equ $ - next_4_lines
+previous_lines: db 0x1b, '[', '14', 'F'
+previous_lines_size equ $ - previous_lines
+next_lines: db 0x1b, '[', '14', 'E'
+next_lines_size equ $ - next_lines
 board: times 9 db '_'
+board_line: db "-------------------", 0xa
+board_line_size equ $ - board_line
+board_gap: db "|     |     |     |", 0xa
+board_gap_size equ $ - board_gap
+board_render_working_buffer: db 0
+board_tile_start: db "|  "
+board_tile_start_size equ $ - board_tile_start
+board_tile_end: db "  "
+board_tile_end_size equ $ - board_tile_end
 current_player: db 'X'
 move_input_message: db "'s move: "
 move_input_message_size equ $ - move_input_message

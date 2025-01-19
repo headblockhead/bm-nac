@@ -136,6 +136,7 @@ print_board:
   mov rsi, board_line
   mov rdx, board_line_size
   syscall
+
   mov rax, 1
   mov rdi, 1
   mov rsi, board_gap
@@ -143,21 +144,77 @@ print_board:
   syscall
 
   .loop2:
+
   mov rax, 1
   mov rdi, 1
-  mov rsi, board_tile_start
-  mov rdx, board_tile_start_size
+  mov rsi, board_bar
+  mov rdx, 1
   syscall
+
+  cmp byte [board + r12], 'X'
+  je .red
+  cmp byte [board + r12], '_'
+  je .black
+
+  .blue:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, blue
+  mov rdx, blue_size
+  syscall
+  jmp .continue
+
+  .red:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, red
+  mov rdx, red_size
+  syscall
+  jmp .continue
+
+  .black:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, reset
+  mov rdx, reset_size
+  syscall
+
+  .continue:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, board_space
+  mov rdx, 1
+  syscall
+
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, board_space
+  mov rdx, 1
+  syscall
+
   mov rax, 1
   mov rdi, 1
   mov rsi, board
   add rsi, r12
   mov rdx, 1
   syscall
+
   mov rax, 1
   mov rdi, 1
-  mov rsi, board_tile_end
-  mov rdx, board_tile_end_size
+  mov rsi, board_space
+  mov rdx, 1
+  syscall
+
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, board_space
+  mov rdx, 1
+  syscall
+  
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, reset
+  mov rdx, reset_size
   syscall
 
   inc r12
@@ -175,8 +232,9 @@ print_board:
 
   mov rax, 1
   mov rdi, 1
-  mov rsi, board_tile_start
+  mov rsi, board_bar
   mov rdx, 1
+  syscall
 
   call print_newline
   mov rax, 1
@@ -381,10 +439,14 @@ board_line_size equ $ - board_line
 board_gap: db "|     |     |     |", 0xa
 board_gap_size equ $ - board_gap
 board_render_working_buffer: db 0
-board_tile_start: db "|  "
-board_tile_start_size equ $ - board_tile_start
-board_tile_end: db "  "
-board_tile_end_size equ $ - board_tile_end
+board_bar: db "|"
+board_space: db " "
+blue: db 0x1b, '[', '97', 'm', 0x1b, '[', '44', 'm'
+  blue_size equ $ - blue
+red: db 0x1b, '[', '97', 'm', 0x1b, '[', '41', 'm'
+  red_size equ $ - red
+reset: db 0x1b, '[', '0', 'm'
+  reset_size equ $ - reset
 current_player: db 'X'
 move_input_message: db "'s move: "
 move_input_message_size equ $ - move_input_message

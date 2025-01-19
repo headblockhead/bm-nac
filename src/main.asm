@@ -333,17 +333,6 @@ check_gameover:
   mov r14b, byte [board + 7]
   mov r15b, byte [board + 8]
 
-  mov rax, 0
-
-  .loop:
-  cmp byte [board + rax], '_'
-  je gameover_row0_check
-  inc rax
-  cmp rax, 9
-  jne .loop
-  mov al, 0
-  jmp gameover
-
 gameover_row0_check:
   cmp bpl, '_'
   je gameover_row1_check
@@ -417,6 +406,17 @@ gameover_diag1_check:
   je gameover
 
 gameover_return:
+
+  mov rax, 0
+  .loop:
+  cmp byte [board + rax], '_'
+  je .return
+  inc rax
+  cmp rax, 9
+  jne .loop
+  mov al, 0
+  jmp gameover
+  .return:
   ret
 
 gameover:

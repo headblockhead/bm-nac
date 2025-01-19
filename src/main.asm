@@ -137,20 +137,31 @@ print_board:
   mov rdx, board_line_size
   syscall
 
+  call print_board_spaces
+  sub r12, 3
+  call print_board_letters
+  sub r12, 3
+  call print_board_spaces
+
+  cmp r12, 9
+  jne .loop
+
   mov rax, 1
   mov rdi, 1
-  mov rsi, board_gap
-  mov rdx, board_gap_size
+  mov rsi, board_line
+  mov rdx, board_line_size
   syscall
 
-  .loop2:
+  ret
 
+print_board_letters:
+  .loop:
   mov rax, 1
   mov rdi, 1
   mov rsi, board_bar
   mov rdx, 1
   syscall
-
+  
   cmp byte [board + r12], 'X'
   je .red
   cmp byte [board + r12], '_'
@@ -183,13 +194,7 @@ print_board:
   mov rax, 1
   mov rdi, 1
   mov rsi, board_space
-  mov rdx, 1
-  syscall
-
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, board_space
-  mov rdx, 1
+  mov rdx, 2
   syscall
 
   mov rax, 1
@@ -202,15 +207,9 @@ print_board:
   mov rax, 1
   mov rdi, 1
   mov rsi, board_space
-  mov rdx, 1
+  mov rdx, 2
   syscall
 
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, board_space
-  mov rdx, 1
-  syscall
-  
   mov rax, 1
   mov rdi, 1
   mov rsi, reset
@@ -226,32 +225,85 @@ print_board:
   cmp r12, 9
   je .escape
 
-  jmp .loop2
+  jmp .loop
 
   .escape:
-
   mov rax, 1
   mov rdi, 1
   mov rsi, board_bar
   mov rdx, 1
   syscall
-
   call print_newline
+  ret
+
+
+print_board_spaces:
+  .loop:
   mov rax, 1
   mov rdi, 1
-  mov rsi, board_gap
-  mov rdx, board_gap_size
+  mov rsi, board_bar
+  mov rdx, 1
+  syscall
+  
+  cmp byte [board + r12], 'X'
+  je .red
+  cmp byte [board + r12], '_'
+  je .black
+
+  .blue:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, blue
+  mov rdx, blue_size
+  syscall
+  jmp .continue
+
+  .red:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, red
+  mov rdx, red_size
+  syscall
+  jmp .continue
+
+  .black:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, reset
+  mov rdx, reset_size
   syscall
 
+  .continue:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, board_space
+  mov rdx, 5
+  syscall
+
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, reset
+  mov rdx, reset_size
+  syscall
+
+  inc r12
+
+  cmp r12, 3
+  je .escape
+  cmp r12, 6
+  je .escape
   cmp r12, 9
-  jne .loop
+  je .escape
 
+  jmp .loop
+
+  .escape:
   mov rax, 1
   mov rdi, 1
-  mov rsi, board_line
-  mov rdx, board_line_size
+  mov rsi, board_bar
+  mov rdx, 1
   syscall
-
+  call print_newline
   ret
 
 step_back_cursor:
@@ -436,11 +488,9 @@ next_lines_size equ $ - next_lines
 board: times 9 db '_'
 board_line: db "-------------------", 0xa
 board_line_size equ $ - board_line
-board_gap: db "|     |     |     |", 0xa
-board_gap_size equ $ - board_gap
 board_render_working_buffer: db 0
 board_bar: db "|"
-board_space: db " "
+board_space: db "     "
 blue: db 0x1b, '[', '97', 'm', 0x1b, '[', '44', 'm'
   blue_size equ $ - blue
 red: db 0x1b, '[', '97', 'm', 0x1b, '[', '41', 'm'

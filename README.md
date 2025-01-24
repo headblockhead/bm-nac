@@ -1,6 +1,7 @@
-# saycheese-ncg
+# BM-NAC
+<sup>pronounced: bee-em-nack, stands for: beautiful-minimal-noughts-and-crosses</sup>
 
-a Naughts and Crosses Game for the terminal written in assembly language.
+A noughts and crosses (tic-tac-toe) game for the Linux terminal written in assembly language, and designed to be both good-looking, and to produce a very small binary.
 
 ## Tasks
 

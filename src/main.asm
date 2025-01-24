@@ -1,49 +1,35 @@
 BITS 64
   org 0x400000
 
-ehdr:           ; Elf64_Ehdr
+elf_header:
   db 0x7f, "ELF", 2, 1, 1, 0 ; e_ident
   times 8 db 0
-  dw  2         ; e_type
-  dw  0x3e      ; e_machine
-  dd  1         ; e_version
-  dq  _start    ; e_entry
-  dq  program_headers - $$ ; e_phoff
-  dq  section_headers - $$ ; e_shoff
-  dd  0         ; e_flags
-  dw  ehdrsize  ; e_ehsize
-  dw  program_header_size  ; e_phentsize
-  dw  2         ; e_phnum
-  dw  section_header_size  ; e_shentsize
-  dw  4         ; e_shnum
-  dw  3         ; e_shstrndx
-ehdrsize  equ  $ - ehdr
+  dw  2                      ; e_type
+  dw  0x3e                   ; e_machine
+  dd  1                      ; e_version
+  dq  _start                 ; e_entry
+  dq  program_header - $$    ; e_phoff
+  dq  0                      ; e_shoff
+  dd  0                      ; e_flags
+  dw  elf_header_size        ; e_ehsize
+  dw  program_header_size    ; e_phentsize
+  dw  1                      ; e_phnum
+  dw  0                      ; e_shentsize
+  dw  0                      ; e_shnum
+  dw  0                      ; e_shstrndx
+elf_header_size equ $ - elf_header
 
-program_headers:
-
-text_program_header:           ; Elf64_Phdr
-  dd  1         ; p_type
-  dd  5         ; p_flags
-  dq  text_section - $$         ; p_offset
-  dq  text_section  ;p_vaddr
-  dq  text_section  ;p_paddr
-  dq  text_section_size  ; p_filesz
-  dq  text_section_size  ; p_memsz
-  dq  0x1000    ; p_align
-
-program_header_size  equ  $ - program_headers
-
-data_program_header:           ; Elf64_Phdr
-  dd  1         ; p_type
-  dd  7         ; p_flags
-  dq  data_section - $$ ; p_offset
-  dq  data_section ;p_vaddr
-  dq  data_section ;p_paddr
-  dq  data_section_size  ; p_filesz
-  dq  data_section_size ; p_memsz
-  dq  0x1000    ; p_align
-
-text_section:
+program_header:
+  dd  1                      ; p_type
+  dd  7                      ; p_flags 
+  ; RWX flags make code writable during runtime, which is dangerous, but reduces need for any other sections, thereby saving space.
+  dq  0                      ; p_offset
+  dq  $$                     ; p_vaddr
+  dq  $$                     ; p_paddr
+  dq  program_size           ; p_filesz
+  dq  program_size           ; p_memsz
+  dq  0x1000                 ; p_align
+program_header_size equ $ - program_header
 
 _start:
   mov rax, 1
@@ -61,70 +47,70 @@ _start:
   jmp .loop
 
 get_move:
-  call step_back_cursor
+  ; Moves the cursor back to the start of the board, overwriting the previous drawing of the board.
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, previous_lines
+  mov rdx, previous_lines_size
+  syscall
 
+  ; Deliberatly overflows past the current_player buffer to include the move_input_message.
   mov rax, 1
   mov rdi, 1
   mov rsi, current_player
   mov rdx, move_input_message_size + 1
   syscall
 
-  mov byte [move_input], 0
+  ; Reads one byte from stdin into move_input.
   mov rax, 0
   mov rdi, 0
-  mov rsi, move_input ; set move_input to the index of our move
+  mov rsi, move_input
   mov rdx, 1
   syscall
 
+  ; If the first character is a newline, it's invalid.
   cmp byte [move_input], 0xa
-  je getmove_invalid
+  je .invalid
 
-  .loop:
+  ; Loop through any remaining bytes from stdin until the newline byte is hit.
+  .read_until_newline:
   mov rax, 0
   mov rdi, 0
   mov rsi, ignored_buffer
   mov rdx, 1
   syscall
   cmp byte [ignored_buffer], 0xa
-  jne .loop
+  jne .read_until_newline
 
-  cmp byte [move_input], '1'
-  jl getmove_invalid ; invalid input, ignore.
-  cmp byte [move_input], '9'
-  jg getmove_invalid ; invalid input, ignore.
-
+  ; Set al to the move_input
   mov al, byte [move_input]
+
+  ; Check if the input is between ASCII '1' and '9'.
+  cmp al, '1'
+  jl .invalid
+  cmp al, '9'
+  jg .invalid
+
+  ; Subtract ASCII '1' from our input to get the index of the board array.
   sub al, '1'
-  mov rdi, rax
 
-  cmp byte [board + rdi], '_'
-  jne getmove_invalid ; invalid input, ignore.
+  ; If our target position isn't empty, ignore the input.
+  cmp byte [board + rax], '_'
+  jne .invalid
 
-  cmp byte [current_player], 'X'
-  je set_x
-  cmp byte [current_player], 'O'
-  je set_o
+  ; Set cl to the current_player, then update the board.
+  mov cl, byte [current_player]
+  mov byte [board+rax], cl
 
-set_o:
-  mov rsi, 'O'
-  call set_board_at_index
+  ; Swap 'X' and 'O' for the current_player.
+  cmp cl, 'X'
+  je .set_player_to_o
   mov byte [current_player], 'X'
-  ret
-
-set_x:
-  mov rsi, 'X'
-  call set_board_at_index
+  jmp .invalid
+  .set_player_to_o:
   mov byte [current_player], 'O'
-  ret
 
-getmove_invalid:
-  mov byte [move_input], 0
-  ret
-
-; expects rdi to be the index, and rsi to be the value
-set_board_at_index:
-  mov rax, rdi
-  mov byte [board + rax], sil
+  .invalid:
   ret
 
 print_board:
@@ -164,8 +150,16 @@ print_board_letters:
   
   cmp byte [board + r12], 'X'
   je .red
-  cmp byte [board + r12], '_'
-  je .black
+  cmp byte [board + r12], 'O'
+  je .blue
+
+  .black:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, reset
+  mov rdx, reset_size
+  syscall
+  jmp .continue
 
   .blue:
   mov rax, 1
@@ -180,14 +174,6 @@ print_board_letters:
   mov rdi, 1
   mov rsi, red
   mov rdx, red_size
-  syscall
-  jmp .continue
-
-  .black:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, reset
-  mov rdx, reset_size
   syscall
 
   .continue:
@@ -247,8 +233,16 @@ print_board_spaces:
   
   cmp byte [board + r12], 'X'
   je .red
-  cmp byte [board + r12], '_'
-  je .black
+  cmp byte [board + r12], 'O'
+  je .blue
+
+  .black:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, reset
+  mov rdx, reset_size
+  syscall
+  jmp .continue
 
   .blue:
   mov rax, 1
@@ -263,14 +257,6 @@ print_board_spaces:
   mov rdi, 1
   mov rsi, red
   mov rdx, red_size
-  syscall
-  jmp .continue
-
-  .black:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, reset
-  mov rdx, reset_size
   syscall
 
   .continue:
@@ -304,22 +290,6 @@ print_board_spaces:
   mov rdx, 1
   syscall
   call print_newline
-  ret
-
-step_back_cursor:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, previous_lines
-  mov rdx, previous_lines_size
-  syscall
-  ret
-
-step_forward_cursor:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, next_lines
-  mov rdx, next_lines_size
-  syscall
   ret
 
 check_gameover:
@@ -447,13 +417,8 @@ gameover_print:
   call gameover_initial_message
   mov rax, 1
   mov rdi, 1
-  mov rsi, current_player
-  mov rdx, 1
-  syscall
-  mov rax, 1
-  mov rdi, 1
   mov rsi, gameover_win_message
-  mov rdx, gameover_win_message_size
+  mov rdx, gameover_win_message_size + 1
   syscall
 
 gameover_exit:
@@ -470,139 +435,47 @@ print_newline:
   syscall
   ret
 
-text_section_size  equ  $ - text_section
-
-data_section:
-
-welcome_message: db "Welcome to Noughts and Crosses.", 0xa, 0xa
+welcome_message: db "Welcome to Noughts and Crosses.",0xa,"To select a square, choose the square's number from left to right, top to bottom. (1-9)", 0xa, 0xa
 welcome_message_size equ $ - welcome_message
+
 gameover_message: db "Game over.", 0xa
 gameover_message_size equ $ - gameover_message
-gameover_win_message: db " wins!"
-gameover_win_message_size equ $ - gameover_win_message
+
 gameover_draw_message: db "It's a draw!"
 gameover_draw_message_size equ $ - gameover_draw_message
+
 previous_lines: db 0x1b, '[', '14', 'F'
 previous_lines_size equ $ - previous_lines
+
 next_lines: db 0x1b, '[', '14', 'E'
 next_lines_size equ $ - next_lines
-board: times 9 db '_'
+
+board: db "__________"
 board_line: db "-------------------", 0xa
+
 board_line_size equ $ - board_line
 board_render_working_buffer: db 0
+
 board_bar: db "|"
 board_space: db "     "
+
 blue: db 0x1b, '[', '97', 'm', 0x1b, '[', '44', 'm'
   blue_size equ $ - blue
+
 red: db 0x1b, '[', '97', 'm', 0x1b, '[', '41', 'm'
   red_size equ $ - red
+
 reset: db 0x1b, '[', '0', 'm'
   reset_size equ $ - reset
+
+gameover_win_message: db "Won by: "
+gameover_win_message_size equ $ - gameover_win_message
 current_player: db 'X'
-move_input_message: db "'s move: "
+move_input_message: db "'s move:  ", 0x08
 move_input_message_size equ $ - move_input_message
+
 move_input: db 0
 ignored_buffer: db 0
 newline: db 0xa
 
-data_section_size  equ  $ - data_section
-
-scnnm: ; section names
-  db 0
-shrtrtab_name_offset equ  $ - scnnm
-  db ".shrtrtab", 0
-text_name_offset equ  $ - scnnm
-  db ".text", 0
-data_name_offset equ  $ - scnnm
-  db ".data", 0
-
-sectnamesize  equ  $ - scnnm
-
-section_headers: ; section headers
-  ;sh_name
-  dd 0
-  ;sh_type
-  dd 0
-  ;sh_flags
-  dq 0
-  ;sh_addr
-  dq 0
-  ;sh_offset
-  dq 0
-  ;sh_size
-  dq 0
-  ;sh_link
-  dd 0
-  ;sh_info
-  dd 0
-  ;sh_addralign
-  dq 0
-  ;sh_entsize
-  dq 0
-
-section_header_size  equ  $ - section_headers
-
-  ;sh_name
-  dd text_name_offset
-  ;sh_type
-  dd 1
-  ;sh_flags
-  dq 6
-  ;sh_addr
-  dq text_section
-  ;sh_offset
-  dq text_section - $$
-  ;sh_size
-  dq text_section_size
-  ;sh_link
-  dd 0
-  ;sh_info
-  dd 0
-  ;sh_addralign
-  dq 0
-  ;sh_entsize
-  dq 0
-
-  ;sh_name
-  dd data_name_offset
-  ;sh_type
-  dd 1
-  ;sh_flags
-  dq 3
-  ;sh_addr
-  dq data_section
-  ;sh_offset
-  dq data_section - $$
-  ;sh_size
-  dq data_section_size
-  ;sh_link
-  dd 0
-  ;sh_info
-  dd 0
-  ;sh_addralign
-  dq 0
-  ;sh_entsize
-  dq 0
-
-  ;sh_name
-  dd shrtrtab_name_offset
-  ;sh_type
-  dd 3
-  ;sh_flags
-  dq 0
-  ;sh_addr
-  dq 0
-  ;sh_offset
-  dq scnnm - $$
-  ;sh_size
-  dq sectnamesize
-  ;sh_link
-  dd 0
-  ;sh_info
-  dd 0
-  ;sh_addralign
-  dq 0
-  ;sh_entsize
-  dq 0
-
-filesize  equ  $ - $$
+program_size equ $ - $$

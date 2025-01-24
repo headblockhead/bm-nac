@@ -303,125 +303,119 @@ check_gameover:
   mov r14b, byte [board + 7]
   mov r15b, byte [board + 8]
 
-gameover_row0_check:
+.row0:
   cmp bpl, '_'
-  je gameover_row1_check
+  je .row1
   cmp bpl, r8b
-  jne gameover_row1_check
+  jne .row1
   mov al, bpl
   cmp r8b, r9b
   je gameover
 
-gameover_row1_check:
+.row1:
   cmp r10b, '_'
-  je gameover_row2_check
+  je .row2
   cmp r10b, r11b
-  jne gameover_row2_check
+  jne .row2
   mov al, r10b
   cmp r11b, r12b
   je gameover
 
-gameover_row2_check:
+.row2:
   cmp r13b, '_'
-  je gameover_col0_check
+  je .col0
   cmp r13b, r14b
-  jne gameover_col0_check
+  jne .col0
   mov al, r13b
   cmp r14b, r15b
   je gameover
 
-gameover_col0_check:
+.col0:
   cmp bpl, '_'
-  je gameover_col1_check
+  je .col1
   cmp bpl, r10b
-  jne gameover_col1_check
+  jne .col1
   mov al, bpl
   cmp r10b, r13b
   je gameover
 
-gameover_col1_check:
+.col1:
   cmp r8b, '_'
-  je gameover_col2_check
+  je .col2
   cmp r8b, r11b
-  jne gameover_col2_check
+  jne .col2
   mov al, r8b
   cmp r11b, r14b
   je gameover
 
-gameover_col2_check:
+.col2:
   cmp r9b, '_'
-  je gameover_diag0_check
+  je .diag0
   cmp r9b, r12b
-  jne gameover_diag0_check
+  jne .diag0
   mov al, r9b
   cmp r12b, r15b
   je gameover
 
-gameover_diag0_check:
+.diag0:
   cmp bpl, '_'
-  je gameover_diag1_check
+  je .diag1
   cmp bpl, r11b
-  jne gameover_diag1_check
+  jne .diag1
   mov al, bpl
   cmp r11b, r15b
   je gameover
 
-gameover_diag1_check:
+.diag1:
   cmp r9b, '_'
-  je gameover_return
+  je .draw
   cmp r9b, r11b
-  jne gameover_return
+  jne .draw
   mov al, r9b
   cmp r11b, r13b
   je gameover
 
-gameover_return:
+.draw:
+  mov r12, 0
 
-  mov rax, 0
-  .loop:
-  cmp byte [board + rax], '_'
+  .draw_loop:
+  cmp byte [board+r12], '_'
   je .return
-  inc rax
-  cmp rax, 9
-  jne .loop
-  mov al, 0
-  jmp gameover
-  .return:
+  inc r12
+  cmp r12, 9
+  jne .draw_loop
+
+  jmp gameover.result_draw
+
+.return:
   ret
 
 gameover:
-  cmp al, 0
-  je gameover_draw
-
   mov byte [current_player], al
-  jmp gameover_print
 
-gameover_initial_message:
   mov rax, 1
   mov rdi, 1
   mov rsi, gameover_message
   mov rdx, gameover_message_size
   syscall
-  ret
 
-gameover_draw:
-  call gameover_initial_message
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, gameover_draw_message
-  mov rdx, gameover_draw_message_size
-  syscall
-  jmp gameover_exit
-
-gameover_print:
-  call gameover_initial_message
+  ; Deliberatly over-read past the win_message buffer to include the current_player variable.
   mov rax, 1
   mov rdi, 1
   mov rsi, gameover_win_message
   mov rdx, gameover_win_message_size + 1
   syscall
 
-gameover_exit:
+  jmp .exit
+
+.result_draw:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, gameover_message
+  mov rdx, gameover_message_size + gameover_draw_message_size
+  syscall
+
+.exit:
   call print_newline
   mov rax, 60
   mov rdi, 0 

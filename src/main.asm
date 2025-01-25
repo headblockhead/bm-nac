@@ -114,182 +114,117 @@ get_move:
   ret
 
 print_board:
-  mov r12, 0 ; index
+  mov r12b, 0 ; index
 
   .loop:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, board_line
-  mov rdx, board_line_size
-  syscall
+  call print_board_line
+ 
+  mov r13b, 0
+  call print_board_part
+  mov r13b, 1
+  call print_board_part
+  mov r13b, 0
+  call print_board_part
+  add r12b, 3
 
-  call print_board_spaces
-  sub r12, 3
-  call print_board_letters
-  sub r12, 3
-  call print_board_spaces
-
-  cmp r12, 9
+  cmp r12b, 9
   jne .loop
 
+  call print_board_line
+  ret
+
+print_board_line:
   mov rax, 1
   mov rdi, 1
   mov rsi, board_line
   mov rdx, board_line_size
   syscall
-
   ret
 
-print_board_letters:
+print_board_part:
   .loop:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, board_bar
-  mov rdx, 1
-  syscall
-  
-  cmp byte [board + r12], 'X'
-  je .red
-  cmp byte [board + r12], 'O'
-  je .blue
 
-  .black:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, reset
-  mov rdx, reset_size
-  syscall
-  jmp .continue
+  cmp r13b, 0
+  je .blank
 
-  .blue:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, blue
-  mov rdx, blue_size
-  syscall
-  jmp .continue
+  mov r11b, byte [board + r12]
+  jmp .print
 
-  .red:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, red
-  mov rdx, red_size
-  syscall
+  .blank:
+  mov r11b, byte ' '
 
-  .continue:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, board_space
-  mov rdx, 2
-  syscall
+  .print:
+  mov byte [board_tile + 2], r11b
+
+call print_board_bar
+  call print_color
 
   mov rax, 1
   mov rdi, 1
-  mov rsi, board
-  add rsi, r12
-  mov rdx, 1
-  syscall
-
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, board_space
-  mov rdx, 2
-  syscall
-
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, reset
-  mov rdx, reset_size
-  syscall
-
-  inc r12
-
-  cmp r12, 3
-  je .escape
-  cmp r12, 6
-  je .escape
-  cmp r12, 9
-  je .escape
-
-  jmp .loop
-
-  .escape:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, board_bar
-  mov rdx, 1
-  syscall
-  call print_newline
-  ret
-
-
-print_board_spaces:
-  .loop:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, board_bar
-  mov rdx, 1
-  syscall
-  
-  cmp byte [board + r12], 'X'
-  je .red
-  cmp byte [board + r12], 'O'
-  je .blue
-
-  .black:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, reset
-  mov rdx, reset_size
-  syscall
-  jmp .continue
-
-  .blue:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, blue
-  mov rdx, blue_size
-  syscall
-  jmp .continue
-
-  .red:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, red
-  mov rdx, red_size
-  syscall
-
-  .continue:
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, board_space
+  mov rsi, board_tile
   mov rdx, 5
   syscall
 
-  mov rax, 1
-  mov rdi, 1
-  mov rsi, reset
-  mov rdx, reset_size
-  syscall
+  call print_reset_color
 
-  inc r12
+  inc r12b
 
-  cmp r12, 3
+  cmp r12b, 3
   je .escape
-  cmp r12, 6
+  cmp r12b,  6
   je .escape
-  cmp r12, 9
+  cmp r12b,  9
   je .escape
 
   jmp .loop
 
   .escape:
+  call print_board_bar
+  call print_newline
+  sub r12b, 3
+  ret
+
+print_board_bar:
   mov rax, 1
   mov rdi, 1
   mov rsi, board_bar
   mov rdx, 1
   syscall
-  call print_newline
+  ret
+
+print_color:
+  cmp byte [board + r12], 'X'
+  je .red
+  cmp byte [board + r12], 'O'
+  je .blue
+
+  call print_reset_color
+  ret
+
+  .blue:
+  mov byte [color + 8], '1'
+  call print_color_bytes
+  ret
+
+  .red:
+  mov byte [color + 8], '4'
+  call print_color_bytes
+  ret
+
+print_color_bytes:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, color
+  mov rdx, color_size
+  syscall
+  ret
+
+print_reset_color:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, reset
+  mov rdx, reset_size
+  syscall
   ret
 
 check_gameover:
@@ -312,6 +247,20 @@ check_gameover:
   cmp r8b, r9b
   je gameover
 
+.col0:
+  cmp bpl, r10b
+  jne .row1
+  mov al, bpl
+  cmp r10b, r13b
+  je gameover
+
+.diag0:
+  cmp bpl, r11b
+  jne .row1
+  mov al, bpl
+  cmp r11b, r15b
+  je gameover
+
 .row1:
   cmp r10b, '_'
   je .row2
@@ -323,20 +272,11 @@ check_gameover:
 
 .row2:
   cmp r13b, '_'
-  je .col0
+  je .col1
   cmp r13b, r14b
-  jne .col0
+  jne .col1
   mov al, r13b
   cmp r14b, r15b
-  je gameover
-
-.col0:
-  cmp bpl, '_'
-  je .col1
-  cmp bpl, r10b
-  jne .col1
-  mov al, bpl
-  cmp r10b, r13b
   je gameover
 
 .col1:
@@ -350,25 +290,14 @@ check_gameover:
 
 .col2:
   cmp r9b, '_'
-  je .diag0
+  je .draw
   cmp r9b, r12b
-  jne .diag0
+  jne .diag1
   mov al, r9b
   cmp r12b, r15b
   je gameover
 
-.diag0:
-  cmp bpl, '_'
-  je .diag1
-  cmp bpl, r11b
-  jne .diag1
-  mov al, bpl
-  cmp r11b, r15b
-  je gameover
-
 .diag1:
-  cmp r9b, '_'
-  je .draw
   cmp r9b, r11b
   jne .draw
   mov al, r9b
@@ -381,8 +310,8 @@ check_gameover:
   .draw_loop:
   cmp byte [board+r12], '_'
   je .return
-  inc r12
-  cmp r12, 9
+  inc r12b
+  cmp r12b, 9
   jne .draw_loop
 
   jmp gameover.result_draw
@@ -445,22 +374,18 @@ next_lines: db 0x1b, '[', '14', 'E'
 next_lines_size equ $ - next_lines
 
 board: db "__________"
-board_line: db "-------------------", 0xa
 
+board_line: db "-------------------", 0xa
 board_line_size equ $ - board_line
 board_render_working_buffer: db 0
-
 board_bar: db "|"
-board_space: db "     "
+board_tile: db "     "
 
-blue: db 0x1b, '[', '97', 'm', 0x1b, '[', '44', 'm'
-  blue_size equ $ - blue
-
-red: db 0x1b, '[', '97', 'm', 0x1b, '[', '41', 'm'
-  red_size equ $ - red
+color: db 0x1b, '[', '97', 'm', 0x1b, '[', '44', 'm'
+color_size equ $ - color
 
 reset: db 0x1b, '[', '0', 'm'
-  reset_size equ $ - reset
+reset_size equ $ - reset
 
 gameover_win_message: db "Won by: "
 gameover_win_message_size equ $ - gameover_win_message

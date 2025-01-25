@@ -7,6 +7,13 @@ Produced for Hack Club's [saycheese YSWS](https://saycheese.hackclub.com/).
 
 ![screenshot](./screenshot.png)
 
+## Running
+
+If you don't want to use the QR code, you can run it with:
+```bash
+nix run github:headblockhead/bm-nac
+```
+
 ## QR Code
 
 The binary is small enough to fit in a QR code, so here's that QR code!

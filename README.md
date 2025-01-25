@@ -5,7 +5,7 @@ A noughts and crosses (tic-tac-toe) game for the Linux terminal written in assem
 
 Produced for Hack Club's [saycheese YSWS](https://saycheese.hackclub.com/).
 
-![game screenshot](./screenshot.png)
+[![asciicast](./demo.gif)](https://asciinema.org/a/LJ9rdZrWfQFpGYTSu487keIvw)
 
 ## Running
 

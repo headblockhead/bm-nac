@@ -5,7 +5,7 @@ A noughts and crosses (tic-tac-toe) game for the Linux terminal written in assem
 
 Produced for Hack Club's [saycheese YSWS](https://saycheese.hackclub.com/).
 
-![screenshot](./screenshot.png)
+![game screenshot](./screenshot.png)
 
 ## Running
 
@@ -18,7 +18,7 @@ nix run github:headblockhead/bm-nac
 
 The binary is small enough to fit in a QR code, so here's that QR code!
 
-![qrcode](./qrcode.png)
+![game binary qrcode](./qrcode.png)
 
 Use `zbarimg --raw --oneshot -Sbinary qrcode.png > executable` to get the executable from the QR code.
 

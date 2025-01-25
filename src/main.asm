@@ -237,7 +237,7 @@ check_gameover:
   mov r13b, byte [board + 6]
   mov r14b, byte [board + 7]
   mov r15b, byte [board + 8]
-
+  
 .row0:
   cmp bpl, '_'
   je .row1
@@ -245,20 +245,6 @@ check_gameover:
   jne .row1
   mov al, bpl
   cmp r8b, r9b
-  je gameover
-
-.col0:
-  cmp bpl, r10b
-  jne .row1
-  mov al, bpl
-  cmp r10b, r13b
-  je gameover
-
-.diag0:
-  cmp bpl, r11b
-  jne .row1
-  mov al, bpl
-  cmp r11b, r15b
   je gameover
 
 .row1:
@@ -272,11 +258,20 @@ check_gameover:
 
 .row2:
   cmp r13b, '_'
-  je .col1
+  je .col0
   cmp r13b, r14b
-  jne .col1
+  jne .col0
   mov al, r13b
   cmp r14b, r15b
+  je gameover
+
+.col0:
+  cmp bpl, '_'
+  je .col1
+  cmp bpl, r10b
+  jne .col1
+  mov al, bpl
+  cmp r10b, r13b
   je gameover
 
 .col1:
@@ -290,14 +285,25 @@ check_gameover:
 
 .col2:
   cmp r9b, '_'
-  je .draw
+  je .diag0
   cmp r9b, r12b
-  jne .diag1
+  jne .diag0
   mov al, r9b
   cmp r12b, r15b
   je gameover
 
+.diag0:
+  cmp bpl, '_'
+  je .diag1
+  cmp bpl, r11b
+  jne .diag1
+  mov al, bpl
+  cmp r11b, r15b
+  je gameover
+
 .diag1:
+  cmp r9b, '_'
+  je .draw
   cmp r9b, r11b
   jne .draw
   mov al, r9b

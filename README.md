@@ -5,6 +5,10 @@ A noughts and crosses (tic-tac-toe) game for the Linux terminal written in assem
 
 ![screenshot](./screenshot.png)
 
+![qrcode](./qrcode.png)
+
+Use `zbarimg --raw --oneshot -Sbinary qrcode.png > executable` to get the executable from the QR code.
+
 ## Tasks
 
 > [!IMPORTANT]

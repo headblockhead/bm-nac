@@ -202,12 +202,12 @@ print_color:
   ret
 
   .blue:
-  mov byte [color + 8], '1'
+  mov byte [color + 8], '4'
   call print_color_bytes
   ret
 
   .red:
-  mov byte [color + 8], '4'
+  mov byte [color + 8], '1'
   call print_color_bytes
   ret
 

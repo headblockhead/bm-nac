@@ -3,7 +3,13 @@
 
 A noughts and crosses (tic-tac-toe) game for the Linux terminal written in assembly language, and designed to be both good-looking, and to produce a very small binary.
 
+Produced for Hack Club's [saycheese YSWS](https://saycheese.hackclub.com/).
+
 ![screenshot](./screenshot.png)
+
+## QR Code
+
+The binary is small enough to fit in a QR code, so here's that QR code!
 
 ![qrcode](./qrcode.png)
 

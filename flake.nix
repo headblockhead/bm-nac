@@ -16,9 +16,9 @@
             buildInputs = with pkgs; [
               nasm
               xc
-              gdb
               xxd
               qrencode
+              zbar
             ];
           };
           packages.saycheese-ncg = pkgs.stdenv.mkDerivation {

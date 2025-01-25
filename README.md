@@ -7,16 +7,21 @@ A noughts and crosses (tic-tac-toe) game for the Linux terminal written in assem
 
 ## Tasks
 
-### run
+> [!IMPORTANT]
+> You must be in the `nix develop` shell for these tasks to work.
+
+### build
 
 ```bash
 nix build
 ls -l ./result/bin/saycheese-ncg
-./result/bin/saycheese-ncg
 ```
 
 ### qr
 
 ```bash
 qrencode -t ansiutf8 -8 -r result/bin/saycheese-ncg
+qrencode -o qrcode.png -8 -r result/bin/saycheese-ncg
+zbarimg --raw --oneshot -Sbinary qrcode.png > scanned-binary
+diff -s result/bin/saycheese-ncg scanned-binary
 ```
